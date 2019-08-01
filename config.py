@@ -24,14 +24,17 @@ def noise_covariance_in_freq(nside):
 
 noise_covar_one_pix = noise_covariance_in_freq(NSIDE)
 noise_covar = np.array([noise_covar_one_pix[7] for _ in range(Npix*N_Stoke)])
-N_metropolis = 100
-N_gibbs = 10000
+N_metropolis = 1
+N_gibbs = 100000
 
 N_real_img = (L_MAX_SCALARS+1)**2
+N_CN = 5
+N_mala = 5
+step_size_mala = 0.00000003
 N = int((L_MAX_SCALARS*(L_MAX_SCALARS + 1)/2)+L_MAX_SCALARS+1)
-var_mala = np.ones(dimension_sph)*1000000
+var_mala = np.ones(dimension_sph)   #(1/dimension_sph)**(1/3)
 
-stdd_cls = np.ones(L_MAX_SCALARS+1)*0.001
+stdd_cls = np.ones(L_MAX_SCALARS+1)
 
 coord = []
 coord_ = []
@@ -46,4 +49,5 @@ for i in range(L_MAX_SCALARS + 1):
 
 mask_imaginary = np.array(coord)
 mask_real = np.array(coord_)
-beta_CN = 0.0005
+#beta_CN = 0.0000005
+beta_CN = 0.0002

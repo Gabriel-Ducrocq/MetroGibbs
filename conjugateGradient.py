@@ -12,7 +12,6 @@ class CG():
 
     def set_cls(self, cls):
         self.cls = np.array([cl for l in range(config.L_MAX_SCALARS+1) for cl in cls[l:]])
-        print(self.cls.shape)
         self.denom = np.concatenate([np.zeros(2), 1/self.cls[2:(config.L_MAX_SCALARS+1)], np.zeros(1), 1/self.cls[(config.L_MAX_SCALARS+2):]])
 
     def linOp(self, x):
@@ -24,20 +23,16 @@ class CG():
 
     def compute_mean(self, d, cls):
         self.set_cls(cls)
-        A = LinearOperator((config.N_real_img, config.N_real_img), matvec=self.linOp)
-        u = hp.sphtfunc.map2alm((1 / config.noise_covar) * d, lmax=config.L_MAX_SCALARS)
-        re = u.real
-        img = u.imag
-        y = np.concatenate((re, utils.remove_null_imag_alm(img)))
+        A = LinearOperator((config.N, config.N), matvec=self.linOp, dtype = complex)
+        y = hp.sphtfunc.map2alm((1 / config.noise_covar) * d, lmax=config.L_MAX_SCALARS)
         solution, err = cg(A, y)
         return solution, err
 
     def get_var(self, i):
-        A = LinearOperator((2*config.N, 2*config.N), matvec=self.linOp)
-        v = np.zeros(2*config.N)
+        A = LinearOperator((config.N, config.N), matvec=self.linOp)
+        v = np.zeros(config.N).astype(complex)
         v[i] = 1
         solution, err = cg(A, v)
-        print("Variance")
         return solution[i], err
 
     def run(self, d, cls):

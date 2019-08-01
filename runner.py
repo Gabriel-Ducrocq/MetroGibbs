@@ -4,15 +4,18 @@ import config
 from conjugateGradient import CG
 import samplingInvGamm
 import metropolis
+from CrankNicolson import crankNicolson
+import mala
 
 
-def gibbs(d):
+def gibbs_conj(d):
     _, cls_init, s_init = utils.generate_sky_map()
     conjgrad = CG()
     history_s = []
     history_cls = []
     cls = cls_init
     s = s_init
+    grad_constant_part = mala.compute_gradient_log_constant_part(d)
     for i in range(config.N_gibbs):
         print(i)
         #s, cls = metropolis.metropolis(s, cls)
@@ -22,12 +25,59 @@ def gibbs(d):
             print("Conjugate Gradient did not converge")
             break
 
-        #cls = samplingInvGamm.sampling(s)
-        #cls_half = samplingInvGamm.sampling(s_half)
-        #history_s.append(s_half)
-        #history_cls.append(cls_half)
+        #h, s = crankNicolson(cls, d)
+        #h, s = mala.mala(cls, d, grad_constant_part)
         history_s.append(s)
         history_cls.append(cls)
 
     return history_cls, history_s
 
+
+def gibbs_crank(d):
+    _, cls_init, s_init = utils.generate_sky_map()
+    conjgrad = CG()
+    history_s = []
+    history_cls = []
+    cls = cls_init
+    s = s_init
+    grad_constant_part = mala.compute_gradient_log_constant_part(d)
+    for i in range(config.N_gibbs):
+        print(i)
+        #s, cls = metropolis.metropolis(s, cls)
+        cls = samplingInvGamm.sampling(s)
+        #s, err = conjgrad.run(d, cls)
+        #if err != 0:
+        #    print("Conjugate Gradient did not converge")
+        #    break
+
+        h, s = crankNicolson(cls, d)
+        #h, s = mala.mala(cls, d, grad_constant_part)
+        history_s.append(s)
+        history_cls.append(cls)
+
+    return history_cls, history_s
+
+
+def gibbs_mala(d):
+    _, cls_init, s_init = utils.generate_sky_map()
+    conjgrad = CG()
+    history_s = []
+    history_cls = []
+    cls = cls_init
+    s = s_init
+    grad_constant_part = mala.compute_gradient_log_constant_part(d)
+    for i in range(config.N_gibbs):
+        print(i)
+        #s, cls = metropolis.metropolis(s, cls)
+        cls = samplingInvGamm.sampling(s)
+        #s, err = conjgrad.run(d, cls)
+        #if err != 0:
+        #    print("Conjugate Gradient did not converge")
+        #    break
+
+        #h, s = crankNicolson(cls, d)
+        h, s = mala.mala(cls, d, grad_constant_part)
+        history_s.append(s)
+        history_cls.append(cls)
+
+    return history_cls, history_s

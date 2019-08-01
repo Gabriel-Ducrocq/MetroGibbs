@@ -63,7 +63,7 @@ def plot_results(path, index, check_alm = False):
     path_cls = np.array(results["path_cls"])
     path_alms = np.array(results["path_alms"])
     obs = results["obs_map"]
-    #obs_alms = results["obs_alms"]
+
     obs_alms = hp.map2alm(obs, lmax=results["config"]["L_MAX_SCALARS"])
     realized_cls = hp.anafast(obs, lmax=results["config"]["L_MAX_SCALARS"])
     true_cls = results["config"]["true_spectrum"]
@@ -88,5 +88,31 @@ def plot_results(path, index, check_alm = False):
 
     print(true_cls)
     print(obs_alms[:10])
-    print(realized_cls[index])
+    print(realized_cls)
 
+
+def compare(conj_path, crank_path, mala_path, index):
+    results_conj = np.load(conj_path)[()]
+    results_crank = np.load(crank_path)[()]
+    results_mala = np.load(mala_path)[()]
+    path_cls_conj = np.array(results_conj["path_cls"])
+    path_cls_crank = np.array(results_crank["path_cls"])
+    path_cls_mala = np.array(results_mala["path_cls"])
+    obs = results_conj["obs_map"]
+
+    obs_alms = hp.map2alm(obs, lmax=results_conj["config"]["L_MAX_SCALARS"])
+    realized_cls = hp.anafast(obs, lmax=results_conj["config"]["L_MAX_SCALARS"])
+    true_cls = results_conj["config"]["true_spectrum"]
+    N_gibbs = results_conj["config"]["N_gibbs"]
+
+    plt.plot(path_cls_conj[:, index])
+    plt.plot(path_cls_crank[:, index])
+    plt.plot(path_cls_mala[:, index])
+    plt.show()
+    plt.close()
+    plt.hist(path_cls_conj[1000:, index], bins=100, density = True, alpha = 0.5)
+    plt.hist(path_cls_crank[1000:, index], bins=100, density=True, alpha=0.5)
+    plt.hist(path_cls_mala[1000:, index], bins=100, density=True, alpha=0.5)
+    plt.axvline(x=realized_cls[index], color='k', linestyle='dashed', linewidth=1)
+    plt.axvline(x=true_cls[index], color='k', linewidth=1)
+    plt.show()
