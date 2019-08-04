@@ -76,7 +76,7 @@ def gibbs_mala(d):
         #    break
 
         #h, s = crankNicolson(cls, d)
-        h, s = mala.mala(cls, d, grad_constant_part)
+        h, s, warm_start, h_g = mala.mala(cls, d, grad_constant_part)
         history_s.append(s)
         history_cls.append(cls)
 

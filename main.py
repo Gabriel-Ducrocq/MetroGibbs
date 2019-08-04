@@ -10,9 +10,9 @@ import runner
 import healpy as hp
 import conjugateGradient
 from gradientDescent import gradient_ascent
+import mala
 
-CLS = np.ones(config.N)
-Int = 10
+Int = 149
 
 def main():
     d, cls_, s_obs = utils.generate_sky_map()
@@ -25,24 +25,37 @@ def main():
     true_mean, err = conjgrad.compute_mean(d, cls_)
     if err != 0:
         print("Conjugate gradient did not converge")
+        return None
 
+    #h, estim_mean = gradient_ascent(d, cls_)
+    #h = np.array(h)
+    #plt.plot(h[:, Int].imag)
+    #plt.axhline(y=true_mean[Int].imag, color="k", linewidth=1)
+    #plt.show()
     #true_var, err = conjgrad.get_var(Int)
     """
-    grad_constant_part = mala.compute_gradient_log_constant_part(d)
-    history, s = mala.mala(cls_, d, grad_constant_part)
-    #history, _ = crankNicolson(cls_, d)
-    path = np.array(history)[:, Int].real
-    print(true_var)
-    plt.plot(path)
-    plt.axhline(y=true_mean[Int].real, color='k', linewidth=1)
-    plt.axhline(y=true_mean[Int].real + 2*np.sqrt(true_var), color='red', linewidth=1)
-    plt.axhline(y=true_mean[Int].real - 2*np.sqrt(true_var), color='red', linewidth=1)
+    grad_cst = mala.compute_gradient_log_constant_part(d)
+    #history, s, warm_start, history_ratio = mala.mala(cls_, d, grad_cst)
+    history, s = crankNicolson(cls_, d)
+    h = np.array(history)[:, Int]
+    plt.plot(h.real)
+    plt.axhline(y=true_mean[Int].real, color='red', linewidth=1)
     plt.show()
     plt.close()
-    plt.hist(np.array(history)[:, Int].real, bins = 50)
-    plt.axvline(x=true_mean[Int].real, color='k', linewidth=1)
+    plt.hist(h[2000:].real, bins=25)
+    plt.axvline(x=true_mean[Int].real, color='red', linewidth=1)
     plt.show()
+    plt.close()
     """
+    """
+    history, s = gradient_ascent(d, cls_)
+    print(true_mean[Int])
+    plt.plot(np.array(history)[:, Int].imag)
+    plt.axhline(y=true_mean[Int].imag, color='red', linewidth=1)
+    plt.show()
+    plt.close()
+    """
+
     h_cls, h_s = runner.gibbs_conj(d)
     results_conj = {"path_cls":h_cls, "path_alms":h_s, "obs_map":d, "obs_alms":s_obs,"config":{"NSIDE": config.NSIDE,
                                                             "L_MAX_SCALARS":config.L_MAX_SCALARS,
@@ -62,12 +75,32 @@ def main():
                                                             "N":config.N_gibbs, "N_crank": config.N_CN, "tau":config.step_size_mala,
                                                             "var_mala":config.var_mala}}
 
+    """
+    h_means = []
+    for i in range(100):
+        d, cls_, s_obs = utils.generate_sky_map()
+        conjgrad = conjugateGradient.CG()
+        true_mean, err = conjgrad.compute_mean(d, cls_)
+        if err != 0:
+            print("Conjugate gradient did not converge")
+            break
+
+        h, estim_mean = gradient_ascent(d, cls_)
+        diff = (estim_mean - true_mean)
+        dist = np.sqrt(np.sum(np.concatenate((diff.real, diff.imag)) ** 2))
+        h_means.append(dist)
+
+    plt.plot(h_g)
+    plt.axhline(y = np.mean(h_means), color = "k", linewidth = 1)
+    plt.show()
+    """
     np.save("results_conj.npy", results_conj)
     np.save("results_crank.npy", results_crank)
     np.save("results_mala.npy", results_mala)
 
 
+
 if __name__ == "__main__":
-    #main()
-    #utils.plot_results("results_short.npy", 7, check_alm=False)
-    utils.compare("results_conj.npy", "results_crank.npy", "results_mala.npy", 8)
+    main()
+#    utils.plot_results("results_mala.npy", 7, check_alm=False)
+#    utils.compare("results_conj.npy", "results_crank.npy", "results_mala.npy", 3)
