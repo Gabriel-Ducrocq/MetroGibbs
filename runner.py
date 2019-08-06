@@ -25,8 +25,6 @@ def gibbs_conj(d):
             print("Conjugate Gradient did not converge")
             break
 
-        #h, s = crankNicolson(cls, d)
-        #h, s = mala.mala(cls, d, grad_constant_part)
         history_s.append(s)
         history_cls.append(cls)
 
@@ -45,13 +43,8 @@ def gibbs_crank(d):
         print(i)
         #s, cls = metropolis.metropolis(s, cls)
         cls = samplingInvGamm.sampling(s)
-        #s, err = conjgrad.run(d, cls)
-        #if err != 0:
-        #    print("Conjugate Gradient did not converge")
-        #    break
-
         h, s = crankNicolson(cls, d)
-        #h, s = mala.mala(cls, d, grad_constant_part)
+
         history_s.append(s)
         history_cls.append(cls)
 
@@ -70,12 +63,7 @@ def gibbs_mala(d):
         print(i)
         #s, cls = metropolis.metropolis(s, cls)
         cls = samplingInvGamm.sampling(s)
-        #s, err = conjgrad.run(d, cls)
-        #if err != 0:
-        #    print("Conjugate Gradient did not converge")
-        #    break
 
-        #h, s = crankNicolson(cls, d)
         h, s, warm_start, h_g = mala.mala(cls, d, grad_constant_part)
         history_s.append(s)
         history_cls.append(cls)
