@@ -78,6 +78,10 @@ def mala(cls, observations, grad_constant_part):
 
 
 
+
+
+
+
 ################# Second implementation of mala
 
 
@@ -140,14 +144,14 @@ def extend_cls(cls):
     return np.array(extended_cls)
 
 
-def mala2(cls, observations, grad_constant_part, ratio=False):
+def mala2(cls, observations, grad_constant_part, unadjusted=True):
     conjgrad = CG()
     extended_cls = extend_cls(cls)
     acceptance = 0
     #s = hp.synalm(cls, lmax=config.L_MAX_SCALARS)
-    s = np.zeros(config.dimension_sph)
+    #s = np.zeros(config.dimension_sph)
+    h_g, s = gradientDescent.gradient_ascent(observations, cls)
     s = flatten_map(s)
-    #h_g, s = gradientDescent.gradient_ascent(observations, cls)
     warm_start = s
     s_pixel = hp.sphtfunc.alm2map(unflat_map_to_pix(s), nside=config.NSIDE)
     grad_log_s = compute_gradient_log2(s, s_pixel, grad_constant_part, extended_cls)
@@ -161,7 +165,7 @@ def mala2(cls, observations, grad_constant_part, ratio=False):
         grad_log_prop = compute_gradient_log2(s_prop, s_prop_pix, grad_constant_part, extended_cls)
         r = compute_MH_ratio2(grad_log_s, grad_log_prop, s, s_pixel, s_prop, s_prop_pix, observations, extended_cls)
         history_ratio.append(r)
-        if not ratio:
+        if unadjusted:
             r = 1
 
         if np.log(np.random.uniform()) < r:
@@ -172,6 +176,6 @@ def mala2(cls, observations, grad_constant_part, ratio=False):
 
     print("Acceptance rate:")
     print(acceptance/config.N_mala)
-    return history, s, warm_start
+    return history, s, warm_start, history_ratio
 
 

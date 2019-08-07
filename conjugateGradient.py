@@ -83,19 +83,20 @@ class CG2:
         A = LinearOperator(((config.L_MAX_SCALARS + 1) ** 2 - 4,
                             (config.L_MAX_SCALARS + 1) ** 2 - 4),
                            matvec=self.linOp, dtype=complex)
-        v = np.zeros((config.L_MAX_SCALARS + 1) ** 2 - 4).astype(complex)
+        v = np.zeros((config.L_MAX_SCALARS + 1) ** 2 - 4)
         v[i] = 1
         solution, err = cg(A, v)
         return solution[i], err
 
     def run(self, d, cls):
         self.set_cls(cls)
-        A = LinearOperator((config.N, config.N), matvec=self.linOp, dtype=complex)
-        #Corriger à cet endroit !!!!
-        omega0 = np.sqrt(self.denom)*np.random.normal(size=config.N)
-        omega1 = hp.sphtfunc.map2alm((1/np.sqrt(config.noise_covar))*np.random.normal(size=config.Npix).astype(complex),lmax=config.L_MAX_SCALARS)
+        A = LinearOperator(((config.L_MAX_SCALARS + 1) ** 2 - 4, (config.L_MAX_SCALARS + 1) ** 2 - 4),
+                           matvec=self.linOp, dtype=complex)
+        omega0 = np.sqrt(1/self.cls)*np.random.normal(size=len(self.cls))
+        omega1 = hp.sphtfunc.map2alm((1/np.sqrt(config.noise_covar))*np.random.normal(size=config.Npix).astype(complex)
+                                     ,lmax=config.L_MAX_SCALARS)
         u = hp.sphtfunc.map2alm(((1/config.noise_covar) * d), lmax=config.L_MAX_SCALARS)
-        b = u + omega0 + omega1
+        b = omega0 + flatten_map(u+omega1)
         solution, err = cg(A, b)
         return solution, err
 

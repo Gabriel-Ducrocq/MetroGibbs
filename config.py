@@ -29,12 +29,11 @@ N_metropolis = 1
 N_gibbs = 10000
 
 N_real_img = (L_MAX_SCALARS+1)**2
-#N_CN = 5
-N_CN = 24
-#N_mala = 7
-N_mala = 10000
+N_CN = 10
+N_mala = 5
+#N_mala = 10000
 #step_size_mala = 0.001
-#step_size_mala = 0.00000001
+#step_size_mala = 0.00000000005
 #step_size_mala = 0.00008
 step_size_mala = 0.001
 N = int((L_MAX_SCALARS*(L_MAX_SCALARS + 1)/2)+L_MAX_SCALARS+1)

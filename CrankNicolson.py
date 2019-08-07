@@ -16,8 +16,8 @@ def compute_CN_ratio(x_pix, y_pix, observations):
 def crankNicolson(cls_, observations):
     accept = 0
     history = []
-    s = hp.synalm(cls_, lmax=config.L_MAX_SCALARS)
-    #h, s = gradientDescent.gradient_ascent(observations, cls_)
+    #s = hp.synalm(cls_, lmax=config.L_MAX_SCALARS)
+    h, s = gradientDescent.gradient_ascent(observations, cls_)
     s_pixel = hp.sphtfunc.alm2map(s, nside=config.NSIDE)
     for i in range(config.N_CN):
         history.append(s)
