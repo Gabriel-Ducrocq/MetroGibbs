@@ -145,7 +145,6 @@ def extend_cls(cls):
 
 
 def mala2(cls, observations, grad_constant_part, unadjusted=True):
-    conjgrad = CG()
     extended_cls = extend_cls(cls)
     acceptance = 0
     #s = hp.synalm(cls, lmax=config.L_MAX_SCALARS)
@@ -157,6 +156,7 @@ def mala2(cls, observations, grad_constant_part, unadjusted=True):
     grad_log_s = compute_gradient_log2(s, s_pixel, grad_constant_part, extended_cls)
     history = []
     history_ratio = []
+    history.append(s)
     for i in range(config.N_mala):
         history.append(s)
         s_prop = proposal2(grad_log_s, s)
@@ -179,3 +179,60 @@ def mala2(cls, observations, grad_constant_part, unadjusted=True):
     return history, s, warm_start, history_ratio
 
 
+##### MALA 3
+
+def compute_gradient_log_constant_part3(observations):
+    temp = (1/config.noise_covar)*observations
+    return flatten_map(hp.sphtfunc.map2alm(temp, lmax=config.L_MAX_SCALARS))
+
+
+def compute_gradient_log3(s, s_pix, grad_constant_part, extended_cls):
+    intermediate = (1/config.noise_covar)*s_pix
+    first_part = flatten_map(hp.sphtfunc.map2alm(intermediate, lmax=config.L_MAX_SCALARS))
+    second_part = (1/np.array(extended_cls))*s
+    grad_variable = first_part + second_part
+    return grad_constant_part - grad_variable
+
+
+def proposal3(s, grad_log_s, step_size):
+    return s + step_size*grad_log_s + np.sqrt(2*step_size)*np.random.normal(size = len(s))
+
+
+def compute_log_density3(s, s_pix, extended_cls, d):
+    return -(1/2)*np.sum(((d - s_pix)**2)/config.noise_covar) - (1/2)*np.sum((s**2)/extended_cls)
+
+
+def compute_log_proposal3(s, grad_log_s, s_prop, step_size):
+    return -(1/2)*np.sum((s_prop - (s + step_size*grad_log_s)**2)/(2*step_size))
+
+
+def compute_log_MH_ratio3(s, s_pix, grad_log_s, s_prop, s_prop_pix, grad_log_s_prop, d, extended_cls, step_size):
+    return compute_log_density3(s_prop, s_prop_pix, extended_cls, d) + compute_log_proposal3(s_prop, grad_log_s_prop, s, step_size) \
+    - (compute_log_density3(s, s_pix, extended_cls, d) + compute_log_proposal3(s, grad_log_s, s_prop, step_size))
+
+
+def mala3(cls, d, grad_constant_part):
+    extended_cls = extend_cls(cls)
+    s = hp.synalm(cls, lmax=config.L_MAX_SCALARS)
+    s_pix = hp.sphtfunc.alm2map(s, nside=config.NSIDE)
+    s = flatten_map(s)
+    grad_log_s = compute_gradient_log3(s, s_pix, grad_constant_part, extended_cls)
+    history = []
+    accepted = 0
+    history.append(s)
+    for i in range(config.N_mala):
+        print(i)
+        s_prop = proposal3(s, grad_log_s, step_size=config.step_size_mala)
+        s_prop_pix = hp.alm2map(unflat_map_to_pix(s_prop), nside =config.NSIDE)
+        grad_log_s_prop = compute_gradient_log3(s_prop, s_prop_pix, grad_constant_part, extended_cls)
+        r = compute_log_MH_ratio3(s, s_pix, grad_log_s, s_prop, s_prop_pix, grad_log_s_prop, d, extended_cls, config.step_size_mala)
+        if np.log(np.random.uniform()) < r:
+            s = s_prop
+            s_pix = s_prop_pix
+            grad_log_s = grad_log_s_prop
+            accepted += 1
+
+        history.append(s)
+
+    print(accepted/config.N_mala)
+    return history, s

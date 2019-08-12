@@ -47,6 +47,8 @@ class CG():
         return solution, err
 
 
+
+
 class CG2:
     def __init__(self):
         self.cls = np.zeros(config.N)

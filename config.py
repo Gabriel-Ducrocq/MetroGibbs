@@ -11,7 +11,7 @@ OUTPUT_CLASS = 'tCl pCl lCl'
 observations = None
 
 N_Stoke = 1
-NSIDE=64
+NSIDE=4
 Npix = 12*NSIDE**2
 L_MAX_SCALARS=int(2*NSIDE)
 dimension_sph = int((L_MAX_SCALARS*(L_MAX_SCALARS + 1)/2)+L_MAX_SCALARS+1)
@@ -29,13 +29,13 @@ N_metropolis = 1
 N_gibbs = 10000
 
 N_real_img = (L_MAX_SCALARS+1)**2
-N_CN = 10
-N_mala = 5
+N_CN = 100000
+N_mala = 100000
 #N_mala = 10000
 #step_size_mala = 0.001
-#step_size_mala = 0.00000000005
-#step_size_mala = 0.00008
-step_size_mala = 0.001
+step_size_mala = 0.00000001
+#step_size_mala = 0.0000008
+#step_size_mala = 0.001
 N = int((L_MAX_SCALARS*(L_MAX_SCALARS + 1)/2)+L_MAX_SCALARS+1)
 var_mala = np.ones(dimension_sph)   #(1/dimension_sph)**(1/3)
 
@@ -55,4 +55,4 @@ for i in range(L_MAX_SCALARS + 1):
 mask_imaginary = np.array(coord)
 mask_real = np.array(coord_)
 #beta_CN = 0.0000005
-beta_CN = 0.02
+beta_CN = 0.00009

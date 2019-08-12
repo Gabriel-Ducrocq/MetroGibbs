@@ -5,6 +5,7 @@ import config
 import json
 import matplotlib.pyplot as plt
 import pylab
+import healpy as hp
 
 import samplingInvGamm
 
@@ -122,3 +123,44 @@ def compare(conj_path, crank_path, mala_path, index):
     print(N_gibbs)
     print("N_mala")
     print(results_mala["config"]["N_crank"])
+
+
+def get_Ylm():
+    y_l_m = []
+    y_l_minus_m = []
+    #On calcule également le monopole et le dipole !
+    for i in range(config.dimension_sph):
+        print(i)
+        alm = np.zeros(config.dimension_sph, dtype=complex)
+        if i <= config.L_MAX_SCALARS+1:
+            alm[i] = 1 + 0*1j
+            ylm = hp.alm2map(alm, nside=config.NSIDE)
+            y_l_m.append(ylm)
+            y_l_minus_m.append(ylm)
+
+        else:
+            alm[i] = 1 + 0 * 1j
+            re = hp.alm2map(alm, nside=config.NSIDE)
+            alm[i] = 0 + 1j
+            img = hp.alm2map(alm, nside=config.NSIDE)
+
+            a_plus = (img.imag + re.real)/2
+            a_minus = (re.real - img.imag)/2
+            b_plus = (re.imag - img.real)/2
+            b_minus = (re.imag + img.real)/2
+
+            y_l_m.append(a_plus+1j*b_plus)
+            y_l_minus_m.append(a_minus + 1j * b_minus)
+
+
+    A1 = np.array(y_l_m).T
+    A2 = np.array(y_l_minus_m[config.L_MAX_SCALARS+1:]).T
+    A = np.concatenate((A2, A1), axis = 1)
+    return A
+
+
+def sph_transform_by_hand(alm, A):
+    alm_conjugate = np.conjugate(alm[config.L_MAX_SCALARS+1:])
+    all_alm = np.concatenate((alm_conjugate, alm))
+    map = np.dot(A, all_alm)
+    return map.real

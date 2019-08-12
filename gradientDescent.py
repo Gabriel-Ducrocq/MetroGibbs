@@ -5,7 +5,7 @@ import matplotlib.pyplot as plt
 import utils
 
 N_grad = 5
-step_size = 0.01
+step_size = 0.00005
 
 def compute_gradient_log_constant_part(observations):
     temp = (1/config.noise_covar)*observations
