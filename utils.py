@@ -125,6 +125,21 @@ def compare(conj_path, crank_path, mala_path, index):
     print(results_mala["config"]["N_crank"])
 
 
+def get_Ylm_transp():
+    all_vec = []
+
+    for i in range(12*config.NSIDE**2):
+        u = np.zeros(12*config.NSIDE**2)
+        u[i] = 1
+        vect = hp.map2alm(u, lmax=config.L_MAX_SCALARS)
+        all_vec.append(vect)
+
+
+    arr = np.array(all_vec).T
+    full_mat = np.concatenate((np.conj(arr[config.L_MAX_SCALARS+1:, :]), arr), axis=0)
+    return full_mat
+
+
 def get_Ylm():
     y_l_m = []
     y_l_minus_m = []
@@ -132,7 +147,7 @@ def get_Ylm():
     for i in range(config.dimension_sph):
         print(i)
         alm = np.zeros(config.dimension_sph, dtype=complex)
-        if i <= config.L_MAX_SCALARS+1:
+        if i < config.L_MAX_SCALARS+1:
             alm[i] = 1 + 0*1j
             ylm = hp.alm2map(alm, nside=config.NSIDE)
             y_l_m.append(ylm)
@@ -164,3 +179,57 @@ def sph_transform_by_hand(alm, A):
     all_alm = np.concatenate((alm_conjugate, alm))
     map = np.dot(A, all_alm)
     return map.real
+
+
+def compute_grouping_matrix():
+    mat = np.zeros(((config.L_MAX_SCALARS+1)**2 -4, (config.L_MAX_SCALARS+1)**2 - 4), dtype=complex)
+    print(mat.shape)
+    for i in range(mat.shape[0]):
+        print(i)
+        if i in range(config.N - (config.L_MAX_SCALARS + 2)):
+            mat[i, i] = -1j
+            mat[i, config.N - (config.L_MAX_SCALARS + 2) + config.L_MAX_SCALARS - 1 + i] = 1
+
+        elif i < config.N - (config.L_MAX_SCALARS + 2) + config.L_MAX_SCALARS - 1:
+            mat[i, i] = 1
+
+        else:
+            mat[i, i - (config.N - (config.L_MAX_SCALARS + 2) + config.L_MAX_SCALARS - 1)] = 1j
+            mat[i, i] = 1
+
+    mat = np.insert(mat, [0, config.N - (config.L_MAX_SCALARS + 2), config.N - (config.L_MAX_SCALARS + 2) ,
+                    config.N - (config.L_MAX_SCALARS + 2) + config.L_MAX_SCALARS - 2 + 1], np.zeros(mat.shape[1]), axis=0)
+
+    return mat
+
+
+def compute_grouping_inverse():
+    mat = np.zeros(((config.L_MAX_SCALARS+1)**2 - 4, (config.L_MAX_SCALARS+1)**2), dtype=complex)
+    for i in range((config.L_MAX_SCALARS+1)**2 - 4):
+        if i < config.N - (config.L_MAX_SCALARS + 2):
+            mat[i, i+1] = (1/2)*1j
+            mat[i, config.N+1+i] = -(1/2)*1j
+
+        elif i < config.N - 3:
+            mat[i, i+3] = 1
+
+        else:
+            mat[i, i + 4] = 1/2
+            mat[i, i - (config.N - (config.L_MAX_SCALARS + 1))] = 1/2
+
+    return mat
+
+
+def compute_variance_matrix(cls_):
+    A = get_Ylm()
+    extended_cls = [cl for l in range(config.L_MAX_SCALARS + 1) for cl in cls_[l:]]
+    extended_cls_real = (extended_cls[:(config.L_MAX_SCALARS + 1)] + extended_cls[(config.L_MAX_SCALARS + 2):])[2:]
+    extended_cls_imag = extended_cls[(config.L_MAX_SCALARS + 2):]
+    ###Attention, l'ordre est ici inversé !
+    extended_cls = np.array(extended_cls_imag + extended_cls_real)
+    mat = compute_grouping_matrix()
+
+    overall_A = np.dot(A, mat)
+    precision = np.dot(overall_A.T, np.dot(np.diag(1/config.noise_covar), overall_A)) + (1/extended_cls)
+    variance = np.linalg.inv(precision)
+    return variance, precision, mat, A

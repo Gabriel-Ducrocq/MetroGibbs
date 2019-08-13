@@ -2,9 +2,10 @@ import numpy as np
 import healpy as hp
 import config
 import matplotlib.pyplot as plt
+import conjugateGradient
 import utils
 
-N_grad = 5
+N_grad = 100
 step_size = 0.00005
 
 def compute_gradient_log_constant_part(observations):
@@ -87,7 +88,7 @@ def gradient_ascent2(observations, cls):
     s_pix = hp.sphtfunc.alm2map(s, nside=config.NSIDE)
     s = flatten_map(s)
     for i in range(N_grad):
-        history.append(s)
+        history.append(conjugateGradient.flatten_map3(conjugateGradient.unflat_map_to_pix2(s)))
         grad_log = compute_gradient_log2(s, s_pix, grad_constant_part, extended_cls)
 
         s = s + step_size*grad_log
