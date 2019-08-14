@@ -145,7 +145,6 @@ def get_Ylm():
     y_l_minus_m = []
     #On calcule également le monopole et le dipole !
     for i in range(config.dimension_sph):
-        print(i)
         alm = np.zeros(config.dimension_sph, dtype=complex)
         if i < config.L_MAX_SCALARS+1:
             alm[i] = 1 + 0*1j
@@ -183,9 +182,7 @@ def sph_transform_by_hand(alm, A):
 
 def compute_grouping_matrix():
     mat = np.zeros(((config.L_MAX_SCALARS+1)**2 -4, (config.L_MAX_SCALARS+1)**2 - 4), dtype=complex)
-    print(mat.shape)
     for i in range(mat.shape[0]):
-        print(i)
         if i in range(config.N - (config.L_MAX_SCALARS + 2)):
             mat[i, i] = -1j
             mat[i, config.N - (config.L_MAX_SCALARS + 2) + config.L_MAX_SCALARS - 1 + i] = 1
@@ -215,21 +212,59 @@ def compute_grouping_inverse():
 
         else:
             mat[i, i + 4] = 1/2
-            mat[i, i - (config.N - (config.L_MAX_SCALARS + 1))] = 1/2
+            ##mat[i, i - (config.N - (config.L_MAX_SCALARS + 1))-5] = 1/2
+            ###Pourquoi - 4 ?
+            mat[i, i - (config.N - (config.L_MAX_SCALARS +1) + 2) + 1 - 4] = 1/2
 
     return mat
 
 
 def compute_variance_matrix(cls_):
     A = get_Ylm()
+    A_t = get_Ylm_transp()
     extended_cls = [cl for l in range(config.L_MAX_SCALARS + 1) for cl in cls_[l:]]
     extended_cls_real = (extended_cls[:(config.L_MAX_SCALARS + 1)] + extended_cls[(config.L_MAX_SCALARS + 2):])[2:]
     extended_cls_imag = extended_cls[(config.L_MAX_SCALARS + 2):]
     ###Attention, l'ordre est ici inversé !
     extended_cls = np.array(extended_cls_imag + extended_cls_real)
     mat = compute_grouping_matrix()
+    mat_t = compute_grouping_inverse()
 
     overall_A = np.dot(A, mat)
-    precision = np.dot(overall_A.T, np.dot(np.diag(1/config.noise_covar), overall_A)) + (1/extended_cls)
+    precision = np.dot(mat_t,np.dot(A_t, np.dot(np.diag(1/config.noise_covar), overall_A)) + (1/extended_cls))
     variance = np.linalg.inv(precision)
     return variance, precision, mat, A
+
+
+def extend_cls(cls):
+    extended_cls = [cl for l in range(config.L_MAX_SCALARS+1) for cl in cls[l:]]
+    extended_cls_real = (extended_cls[:(config.L_MAX_SCALARS+1)] + extended_cls[(config.L_MAX_SCALARS+2):])[2:]
+    extended_cls_imag = extended_cls[(config.L_MAX_SCALARS+2):]
+    extended_cls =  extended_cls_imag + extended_cls_real
+    return np.array(extended_cls)
+
+
+def flatten_map(s):
+    s_real = s.real[[i for i in range(len(s)) if i != 0 and i != 1 and i != (config.L_MAX_SCALARS+1)]]
+    s_imag = s.imag[[i for i in range((config.L_MAX_SCALARS+2),len(s))]]
+    s_flatten = np.concatenate((s_imag, s_real))
+    return s_flatten
+
+
+def compute_gradient_log_constant_part(observations):
+    temp = (1/config.noise_covar)*observations
+    return flatten_map(hp.sphtfunc.map2alm(temp, lmax=config.L_MAX_SCALARS))
+
+
+def compute_gradient_log(s, s_pix, grad_constant_part, extended_cls):
+    first_part = flatten_map(hp.sphtfunc.map2alm((1/config.noise_covar)*s_pix, lmax=config.L_MAX_SCALARS))
+    second_part = (1/np.array(extended_cls))*s
+    grad_variable = first_part + second_part
+    return grad_constant_part - grad_variable
+
+
+def unflat_map_to_pix(s):
+    imag_part = np.concatenate((np.zeros(config.L_MAX_SCALARS+2), s[:config.N-config.L_MAX_SCALARS-1-1]))
+    real_part = s[config.N-config.L_MAX_SCALARS-1-1:]
+    real_part = np.insert(real_part, [0, 0, config.L_MAX_SCALARS - 1], 0)
+    return real_part + 1j*imag_part

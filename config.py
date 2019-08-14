@@ -56,3 +56,5 @@ mask_imaginary = np.array(coord)
 mask_real = np.array(coord_)
 #beta_CN = 0.0000005
 beta_CN = 0.00009
+N_gradient = 5
+gradient_step_size = 0.00005

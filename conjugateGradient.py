@@ -185,14 +185,6 @@ class CG3:
         solution, err = cg(A, b, tol=1e-8)
         return solution, err
 
-    def test(self, cls):
-        self.set_cls(cls)
-        A = LinearOperator(((config.L_MAX_SCALARS + 1) ** 2 - 4, (config.L_MAX_SCALARS + 1) ** 2 - 4),
-                           matvec=self.linOp, dtype=complex)
-        u = np.ones((config.L_MAX_SCALARS + 1) ** 2 - 4)
-        sol, err = cg(A,u)
-        return sol
-
 
 ######## Fourth version
 
@@ -212,16 +204,9 @@ class CG4:
         self.cls = np.array(extended_cls_imag + extended_cls_real)
 
     def linOp(self, x):
-        #map = np.dot(self.mat, x)
         map = unflat_map_to_pix4(x)
-        map = np.concatenate((np.conj(map[config.L_MAX_SCALARS+1:]), map))
-        #pix_map = hp.sphtfunc.alm2map(map, nside=config.NSIDE)
-        pix_map = np.dot(self.alm_to_pix, map)
-        #first_term = flatten_map4(hp.sphtfunc.map2alm((1/config.noise_covar)*pix_map, lmax=config.L_MAX_SCALARS))
-        #first_term = np.dot(self.mat.T, np.dot(self.A_T.T, (1/config.noise_covar)*pix_map))
-        interm = np.dot(self.pix_to_alm, (1 / config.noise_covar) * pix_map)[config.N - (config.L_MAX_SCALARS +1):]
-        first_term = flatten_map4(interm)
-        #first_term = np.dot(self.mat.T, np.dot(self.A_T.T, (1 / config.noise_covar) * pix_map))
+        pix_map = hp.sphtfunc.alm2map(map, nside=config.NSIDE)
+        first_term = flatten_map4(hp.sphtfunc.map2alm((1/config.noise_covar)*pix_map, lmax=config.L_MAX_SCALARS))
         second_term = (1/self.cls)*x
         sol = first_term + second_term
         return sol

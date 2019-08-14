@@ -5,7 +5,7 @@ import matplotlib.pyplot as plt
 import conjugateGradient
 import utils
 
-N_grad = 100
+N_grad = 5
 step_size = 0.00005
 
 def compute_gradient_log_constant_part(observations):
@@ -93,5 +93,22 @@ def gradient_ascent2(observations, cls):
 
         s = s + step_size*grad_log
         s_pix = hp.alm2map(unflat_map_to_pix(s), nside=config.NSIDE)
+
+    return history, conjugateGradient.flatten_map3(conjugateGradient.unflat_map_to_pix2(s))
+
+
+
+def gradient_ascent_good(d, cls_):
+    history = []
+    extended_cls = utils.extend_cls(cls_)
+    grad_constant_part = utils.compute_gradient_log_constant_part(d)
+    s = hp.synalm(cls_, lmax=config.L_MAX_SCALARS)
+    s_pix = hp.sphtfunc.alm2map(s, nside=config.NSIDE)
+    s = utils.flatten_map(s)
+    for i in range(config.N_gradient):
+        history.append(s)
+        grad_log = utils.compute_gradient_log(s, s_pix, grad_constant_part, extended_cls)
+        s = s + config.gradient_step_size*grad_log
+        s_pix = hp.alm2map(utils.unflat_map_to_pix(s), lmax=config.L_MAX_SCALARS, nside=config.NSIDE)
 
     return history, s

@@ -3,6 +3,7 @@ import config
 import healpy as hp
 import matplotlib.pyplot as plt
 import gradientDescent
+import utils
 
 
 def compute_log_likelihood(x_pix, observations):
@@ -78,6 +79,39 @@ def crankNicolson2(cls_, d):
         history.append(s)
         s_prop = np.sqrt(1 - config.beta_CN**2)*s +config.beta_CN*flatten_map(hp.synalm(cls_, lmax=config.L_MAX_SCALARS))
         s_prop_pix = hp.alm2map(unflat_map_to_pix(s_prop), nside=config.NSIDE)
+        r = compute_CN_ratio2(s_pix, s_prop_pix, d)
+        if np.log(np.random.uniform()) < r:
+            s = s_prop
+            s_pix = s_prop_pix
+            accepted += 1
+
+    print(accepted/config.N_CN)
+    return history, s
+
+
+
+#### Good one
+
+def compute_log_likelihood_good(s_pix, d):
+    return -(1/2)*np.sum(((d-s_pix)**2)/config.noise_covar)
+
+
+def compute_CN_ratio_good(s_pix, s_pix_prop, d):
+    return compute_log_likelihood_good(s_pix_prop, d) - compute_log_likelihood_good(s_pix, d)
+
+
+
+def crankNicolson_good(cls_, d):
+    #s = hp.synalm(cls_, lmax=config.L_MAX_SCALARS)
+    h, s = gradientDescent.gradient_ascent_good(d, cls_)
+    s_pix = hp.sphtfunc.alm2map(utils.unflat_map_to_pix(s), nside=config.NSIDE)
+    #s = utils.flatten_map(s)
+    accepted = 0
+    history = []
+    for i in range(config.N_CN):
+        history.append(s)
+        s_prop = np.sqrt(1 - config.beta_CN**2)*s +config.beta_CN*utils.flatten_map(hp.synalm(cls_, lmax=config.L_MAX_SCALARS))
+        s_prop_pix = hp.alm2map(utils.unflat_map_to_pix(s_prop), nside=config.NSIDE)
         r = compute_CN_ratio2(s_pix, s_prop_pix, d)
         if np.log(np.random.uniform()) < r:
             s = s_prop

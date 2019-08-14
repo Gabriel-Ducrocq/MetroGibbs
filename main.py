@@ -2,14 +2,14 @@ import mala
 import utils
 import matplotlib.pyplot as plt
 import time
-from CrankNicolson import crankNicolson, crankNicolson2
+from CrankNicolson import crankNicolson_good
 import metropolis
 import config
 import numpy as np
 import runner
 import healpy as hp
 import conjugateGradient
-from gradientDescent import gradient_ascent, gradient_ascent2, unflat_map_to_pix
+from gradientDescent import gradient_ascent, gradient_ascent2, unflat_map_to_pix, gradient_ascent_good
 import mala
 
 Int = 30
@@ -39,12 +39,6 @@ def main():
     conjgrad3 = conjugateGradient.CG3()
     conjgrad4 = conjugateGradient.CG4(group_mat, A, A_transp)
 
-    r3 = conjgrad3.test(cls_others)
-    r4 = conjgrad4.test(cls_others)
-    print(r3)
-    print(r4)
-    print("\n")
-    print(r3 - r4)
 
     #testeur = np.random.normal(size=(config.L_MAX_SCALARS+1)**2) + 1j*np.random.normal(size=(config.L_MAX_SCALARS+1)**2)
     #testeur.imag[:config.L_MAX_SCALARS + 1] = 0
@@ -75,31 +69,14 @@ def main():
     #print(e1[config.N - (config.L_MAX_SCALARS + 1):] - e2)
     #print(e1 - e2)
 
-    #print(A_transp[-1,:])
-    #print(A[:, -1])
-    #print(A_transp[-1,:] - A[:, -1])
-
-    #testeur = np.random.normal(size=config.N) + 1j*np.random.normal(size=config.N)
-    #testeur[[0, 1, config.L_MAX_SCALARS + 1]] = 0
-    #testeur.imag[:config.L_MAX_SCALARS + 1] = 0
-    #t2 = np.concatenate((np.conj(testeur[config.L_MAX_SCALARS+1:]), testeur))
-    #maybe_t2 = np.dot(A_transp, np.dot(A, t2))
-    #print(t2)
-    #print("\n")
-    #print(maybe_t2)
-    #print("\n")
-    #print(maybe_t2 - t2)
-    #r1 = np.dot(A, t2)
-    #r2 = hp.alm2map(testeur, nside=config.NSIDE)
-    #print(r1 - r2)
-    #print(np.dot(A.T, A)[3, 3])
-
-    ### Maintenant on teste le matrice de group
 
 
 
     u = np.concatenate((2*np.ones(config.N - (config.L_MAX_SCALARS + 2)), np.ones(config.L_MAX_SCALARS-1),
                     3*np.ones(config.N - (config.L_MAX_SCALARS + 2))))
+
+    #u = np.concatenate((np.random.normal(size=config.N - (config.L_MAX_SCALARS + 2)), np.random.normal(size=config.L_MAX_SCALARS-1),
+    #                np.random.normal(size=config.N - (config.L_MAX_SCALARS + 2))))
 
     #u[0] = 0
     #u[config.N - config.L_MAX_SCALARS] = 0
@@ -107,8 +84,14 @@ def main():
     #u[config.N] = 0
 
     degroup_mat = utils.compute_grouping_inverse()
+    e = np.dot(group_mat, u)
+    print(e[74+4])
+    print(e[74 - (config.N - (config.L_MAX_SCALARS +1) + 2) + 1 - 4])
+    print(74 - (config.N - (config.L_MAX_SCALARS +1) + 2) + 1 - 4)
+    v = np.dot(degroup_mat, np.dot(group_mat, u))
+    print(v)
+    print((config.N - (config.L_MAX_SCALARS +1) + 2) + 1 - 4)
     print(np.dot(group_mat, u))
-    print(np.dot(degroup_mat, np.dot(group_mat, u)))
     #e = np.dot(degroup_mat, np.dot(A_transp, np.dot(A, np.dot(group_mat, u))))
     #print(e - u)
     #print(u)
@@ -133,7 +116,6 @@ def main():
     inv_Matrix = np.linalg.solve(cg_Matrix, np.ones(81))
     print(inv_Matrix[Int, Int])
     """
-    """
     conjgrad2 = conjugateGradient.CG2()
     conjgrad1 = conjugateGradient.CG()
     conjgrad3 = conjugateGradient.CG3()
@@ -153,6 +135,7 @@ def main():
         print("Conjugate gradient did not converge")
         return None
 
+
     variance_int1, err = conjgrad1.get_var(Int)
 
 
@@ -168,20 +151,10 @@ def main():
         print("Conjugate gradient did not converge for variance")
         return None
 
+    """
     variance_true, precision_true, mat, A = utils.compute_variance_matrix(cls_others)
-
-    alm_real = np.random.normal(size = int((config.L_MAX_SCALARS+1)*(config.L_MAX_SCALARS+2)/2))
-    alm_imag = np.random.normal(size = int((config.L_MAX_SCALARS+1)*(config.L_MAX_SCALARS+2)/2))
-    mask = np.ones(len(alm_real), dtype=bool)
-    mask[[0, 1, config.L_MAX_SCALARS+1]] = 0
-    alm_real = alm_real[mask]
-    mask = np.ones(len(alm_imag), dtype=bool)
-    mask[:config.L_MAX_SCALARS+2] = 0
-    alm_imag = alm_imag[mask]
-    alm_hand = np.concatenate((alm_imag, alm_real))
-    alm_hp = np.concatenate((alm_real, alm_imag))
-    map1 = np.dot(mat, alm_hand)
-    map2 = mala.unflat_map_to_pix(alm_hp)
+    chol_var = np.linalg.cholesky(variance_true)
+    chol_precision = np.linalg.cholesky(precision_true)
 
     u = hp.map2alm((1/config.noise_covar)*d, lmax=config.L_MAX_SCALARS)
     u = conjugateGradient.flatten_map3(u)
@@ -199,8 +172,8 @@ def main():
     print(variance_int3)
     print(variance_true[Int, Int])
     print(conjgrad3.get_var(Int))
-    """
-    """ 
+    print(conjgrad4.get_var(Int))
+
     h_cg2 = []
     for i in range(1000):
         print(i)
@@ -214,79 +187,107 @@ def main():
         sol, err = conjgrad1.run(d, cls_others)
         h_cg1.append(mala.flatten_map(sol))
 
+
     h_cg3 = []
     for i in range(1000):
         print(i)
         sol, err = conjgrad3.run(d, cls_others)
-        h_cg3.append(mala.flatten_map(sol))
-
+        h_cg3.append(sol)
+        
     
+    h_cg4 = []
+    for i in range(1000):
+        print(i)
+        sol, err = conjgrad4.run(d, cls_others)
+        h_cg4.append(sol)
+
+    h_chol = []
+    true_mean = np.dot(variance_true,
+                      conjugateGradient.flatten_map3(hp.sphtfunc.map2alm((1 / config.noise_covar) * d, lmax=config.L_MAX_SCALARS)))
+    for i in range(1000):
+        print(i)
+        #v = np.dot(chol_var, np.random.normal(size = 77)) + true_mean
+        #omega0 = np.sqrt(1/conjgrad3.cls)*np.random.normal(size=len(conjgrad3.cls))
+        #omega1 = hp.sphtfunc.map2alm((1/np.sqrt(config.noise_covar))*np.random.normal(size=config.Npix)
+        #                             ,lmax=config.L_MAX_SCALARS)
+        #omega1 = np.dot(degroup_mat, np.dot(A_transp, (1 / np.sqrt(config.noise_covar))*np.random.normal(size=config.Npix)))
+        #u = hp.sphtfunc.map2alm(((1/config.noise_covar) * d), lmax=config.L_MAX_SCALARS)
+        u = np.dot(degroup_mat,np.dot(A_transp, (1 / config.noise_covar) * d))
+        #b = omega0 + conjugateGradient.flatten_map3(u+omega1)
+        #b = omega0 + u + omega1
+        b = np.dot(chol_precision, np.random.normal(size = precision_true.shape[1])) + u
+        v = np.dot(variance_true, b)
+        h_chol.append(v)
+
+
+
     #h, estim_mean = gradient_ascent(d, cls_)
-    h1 = np.array(h_cg1)
-    h2 = np.array(h_cg2)
-    h3 = np.array(h_cg3)
-    stdd2 = np.std(h2[:, Int])
+    #h1 = np.array(h_cg1)
+    #h2 = np.array(h_cg2)
+    h4 = np.array(h_cg4)
+    hchol = np.array(h_chol)
+    stdd2 = np.std(hchol[:, Int])
     #emp_var = np.var(h[:, Int])
     #print(h[:, Int])
-    plt.hist(h1[:, Int], bins=25, alpha=0.2, density=True, label="Old")
-    plt.hist(h2[:, Int], bins=25, alpha=0.2, density=True, label="New")
-    plt.hist(h3[:, Int], bins=25, alpha=0.2, density=True, label="NewNew")
-    plt.axvline(x=true_mean2[Int], color="k", linewidth=1)
-    plt.axvline(x=true_mean2[Int] + np.sqrt(variance_true[Int, Int]), color="k", linewidth=1)
-    plt.axvline(x=true_mean2[Int] - np.sqrt(variance_true[Int, Int]), color="k", linewidth=1)
-    plt.axvline(x=true_mean2[Int] + stdd2, color="r", linewidth=1)
-    plt.axvline(x=true_mean2[Int] - stdd2, color="r", linewidth=1)
+    #plt.hist(h1[:, Int], bins=25, alpha=0.2, density=True, label="Old")
+    #plt.hist(h2[:, Int], bins=25, alpha=0.2, density=True, label="New")
+    plt.hist(h4[:, Int], bins=15, alpha=0.5, density=True, label="CG4")
+    plt.hist(hchol[:, Int], bins=15, alpha=0.5, density=True, label="Cholesky")
+    plt.axvline(x=true_mean4[Int], color="k", linewidth=1)
+    plt.axvline(x=true_mean4[Int] + np.sqrt(variance_true[Int, Int]), color="k", linewidth=1)
+    plt.axvline(x=true_mean4[Int] - np.sqrt(variance_true[Int, Int]), color="k", linewidth=1)
+    plt.axvline(x=true_mean4[Int] + stdd2, color="r", linewidth=1)
+    plt.axvline(x=true_mean4[Int] - stdd2, color="r", linewidth=1)
     plt.legend(loc="upper right")
     #plt.axvline(x=true_mean2[Int] + np.sqrt(emp_var), color="red", linewidth=1)
     #plt.axvline(x=true_mean2[Int] - np.sqrt(emp_var), color="red", linewidth=1)
     plt.show()
 
-    grad_cst = mala.compute_gradient_log_constant_part3(d)
+    """
+
+    #ICI POUR MALA !!!
+    grad_cst = utils.compute_gradient_log_constant_part(d)
     #history, s  = mala.mala3(cls_others, d, grad_cst)
     print("\n")
     print("\n")
     print("\n")
-    #history, s, _, _ = mala.mala2(cls_others, d, grad_cst, unadjusted=False)
-    #history_r, s, warm_start = mala.mala2(cls_others, d, grad_cst, ratio=True)
-    history, s = crankNicolson2(cls_, d)
+    #history, s = mala.mala_good(cls_others, d, grad_cst, unadjusted=False)
+    history, s = crankNicolson_good(cls_, d)
     h = np.array(history)[:, Int]
     #h_r = np.array(history_r)[:, Int]
     plt.plot(h)
     #plt.plot(h_r)
-    plt.axhline(y=true_mean2[Int], color='green', linewidth=1)
-    plt.axhline(y=true_mean2[Int] + np.sqrt(variance_int), color='green', linewidth=1)
-    plt.axhline(y=true_mean2[Int] - np.sqrt(variance_int), color='green', linewidth=1)
+    plt.axhline(y=true_mean4[Int], color='green', linewidth=1)
+    plt.axhline(y=true_mean4[Int] + np.sqrt(variance_int), color='green', linewidth=1)
+    plt.axhline(y=true_mean4[Int] - np.sqrt(variance_int), color='green', linewidth=1)
     plt.show()
     plt.close()
-    emp_var = np.var(h)
-    plt.hist(h, label="ULA", density=True, alpha=0.5)
-    #plt.hist(np.array(h_cg)[:, Int], bins=25, label="CG", density=True, alpha=0.5)
-    plt.axvline(x=true_mean2[Int], color='red', linewidth=1)
-    plt.axvline(x=true_mean2[Int] + np.sqrt(variance_int), color='green', linewidth=1)
-    plt.axvline(x=true_mean2[Int] - np.sqrt(variance_int), color='green', linewidth=1)
-    plt.axvline(x=true_mean2[Int] + np.sqrt(emp_var), color='red', linewidth=1)
-    plt.axvline(x=true_mean2[Int] - np.sqrt(emp_var), color='red', linewidth=1)
-    plt.legend(loc="upper right")
-    plt.show()
-    plt.close()
-    print(variance_int)
+    #emp_var = np.var(h)
+    #plt.hist(h, label="ULA", density=True, alpha=0.5)
+    #plt.hist(np.array(h_cg4)[:, Int], bins=25, label="CG", density=True, alpha=0.5)
+    #plt.axvline(x=true_mean4[Int], color='red', linewidth=1)
+    #plt.axvline(x=true_mean4[Int] + np.sqrt(variance_int), color='green', linewidth=1)
+    #plt.axvline(x=true_mean4[Int] - np.sqrt(variance_int), color='green', linewidth=1)
+    #plt.axvline(x=true_mean4[Int] + np.sqrt(emp_var), color='red', linewidth=1)
+    #plt.axvline(x=true_mean4[Int] - np.sqrt(emp_var), color='red', linewidth=1)
+    #plt.legend(loc="upper right")
+    #plt.show()
+    #plt.close()
+    #print(variance_int)
+
     """
-    """
-    history, s = gradient_ascent2(d, cls_others)
+    #Ici pour gradient !!!
+    history, s = gradient_ascent_good(d, cls_others)
     h = np.array(history)
     plt.plot(h[:, Int])
-    plt.axhline(y=true_mean2[Int], color='red', linewidth=1)
+    plt.axhline(y=true_mean4[Int], color='red', linewidth=1)
     plt.axhline(y=true_mean3[Int], color='green', linewidth=1)
     plt.show()
     plt.close()
-
-
-
-    m1 = conjgrad3.test(cls_others)
-    m2 = conjgrad4.test(cls_others)
-    print(m1)
-    print(m2)
-    print(np.dot(variance_true, np.ones(variance_true.shape[1])))
+    print(h[0, Int])
+    print(history[0][Int])
+    print(np.array(history).shape)
+    print(history)
     """
     """
     h_cls, h_s = runner.gibbs_conj(d)
